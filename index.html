@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ID-RailSim 3D - Simulator Kereta Api Indonesia</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0f19;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #fff;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* UI Overlay Layer */
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-kai { background: #ff6b00; color: #fff; }
+    .badge-krl { background: #d92525; color: #fff; }
+    .badge-status-safe { background: #10b981; color: #022c22; }
+    .badge-status-warn { background: #f59e0b; color: #451a03; }
+    .badge-status-danger { background: #ef4444; color: #450a0a; }
+
+    /* HUD Speed & Brake Display */
+    .hud-center {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .speedo-box {
+      text-align: center;
+      min-width: 130px;
+    }
+    .speedo-val {
+      font-size: 38px;
+      font-weight: 900;
+      color: #38bdf8;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+    }
+    .speedo-unit {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    /* Notch & Brake Gauges */
+    .gauge-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.7);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      min-width: 80px;
+    }
+    .gauge-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; }
+    .gauge-val { font-size: 18px; font-weight: 700; color: #f8fafc; font-variant-numeric: tabular-nums; }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .control-cluster {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn-action {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .btn-action:hover {
+      background: linear-gradient(135deg, #334155, #1e293b);
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+    .btn-action:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    .btn-horn {
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      color: #fff;
+      border-color: #f97316;
+      font-weight: 800;
+    }
+    .btn-horn:hover {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      box-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+    }
+    .btn-deadman {
+      background: #dc2626;
+      border-color: #ef4444;
+      font-weight: 700;
+      animation: pulse 1s infinite alternate;
+    }
+    .btn-deadman.active-safe {
+      background: #15803d;
+      border-color: #22c55e;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.8; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1.02); box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); }
+    }
+
+    /* Levers Container */
+    .levers-panel {
+      display: flex;
+      gap: 16px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .lever-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .lever-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .btn-step {
+      background: #334155;
+      border: 1px solid #475569;
+      color: white;
+      width: 42px;
+      height: 34px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-step:hover { background: #475569; }
+
+    /* Camera Switcher */
+    .cam-switcher {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-cam {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-cam.active {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    /* Info Bar / Semboyan Alert */
+    .signal-alert-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .signal-lamp {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #475569;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .signal-lamp.green { background: #22c55e; box-shadow: 0 0 16px #22c55e; }
+    .signal-lamp.yellow { background: #eab308; box-shadow: 0 0 16px #eab308; }
+    .signal-lamp.red { background: #ef4444; box-shadow: 0 0 16px #ef4444; }
+
+    /* Modal Route Selector (BUSSID Style) */
+    #route-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(14px);
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+    }
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      width: 90%;
+      max-width: 780px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 14px;
+    }
+    .route-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .route-card {
+      background: #1e293b;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .route-card:hover {
+      border-color: #38bdf8;
+      background: #243248;
+      transform: translateY(-3px);
+    }
+    .route-card.selected {
+      border-color: #ff6b00;
+      background: #2a384f;
+    }
+    .btn-start {
+      width: 100%;
+      background: linear-gradient(135deg, #ff6b00, #ea580c);
+      border: none;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
+    }
+    .btn-start:hover {
+      background: linear-gradient(135deg, #ff7e24, #f97316);
+    }
+  </style>
+  <!-- Three.js from Reliable CDN with fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <!-- HUD & Controls Overlay -->
+  <div id="ui-overlay">
+    <!-- Top Information Bar -->
+    <div class="top-bar">
+      <div class="glass-card interactive" style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge badge-kai" id="train-badge">KAI CC 206</span>
+          <span style="font-weight: 700; font-size: 14px;" id="train-title">KA 1 Argo Bromo Anggrek</span>
+        </div>
+        <div style="font-size: 12px; color: #94a3b8;" id="route-location-text">
+          Lintas: Manggarai - Jatinegara (Km 12+400)
+        </div>
+        <div style="font-size: 11px; color: #38bdf8; margin-top: 4px; font-weight: bold;">
+          💡 Gas: [W / ▲] | Rem: [A / ▼] | Klakson: [H] | Siap: [Spasi]
+        </div>
+      </div>
+
+      <!-- Center Speedometer & Gauges -->
+      <div class="hud-center interactive">
+        <div class="glass-card speedo-box">
+          <div class="speedo-val" id="hud-speed">0</div>
+          <div class="speedo-unit">KM/JAM (TASPAT: <span id="hud-taspat" style="color:#f59e0b;">90</span>)</div>
+        </div>
+        <div class="gauge-pill">
+          <span class="gauge-label">THROTTLE</span>
+          <span class="gauge-val" id="hud-notch" style="color:#38bdf8;">N-0</span>
+        </div>
+        <div class="gauge-pill">
+          <span class="gauge-label">REVERSER</span>
+          <span class="gauge-val" id="hud-reverser" style="color:#10b981;">MAJU</span>
+        </div>
+        <div class="gauge-pill">
+          <span class="gauge-label">REM UDARA</span>
+          <span class="gauge-val" id="hud-brake" style="color:#ef4444;">100%</span>
+        </div>
+      </div>
+
+      <!-- Semboyan Signal Indicator & Weather Toggles -->
+      <div class="glass-card interactive" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="signal-alert-box">
+          <div class="signal-lamp green" id="hud-signal-lamp"></div>
+          <div>
+            <div style="font-size: 11px; color: #94a3b8;">SINYAL MASUK / BLOK</div>
+            <div style="font-weight: bold; font-size: 13px;" id="hud-signal-text">SEMBOYAN 5 (AMAN)</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-cam" id="btn-weather" title="Ganti Cuaca Tropis / Hujan">🌦️ Cuaca</button>
+          <button class="btn-cam" id="btn-time" title="Ganti Siang / Malam">☀️ Waktu</button>
+          <button class="btn-cam" id="btn-routes-menu" title="Pilih Rute & Kereta">🗺️ Rute</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Camera -->
+    <div class="bottom-bar">
+      <!-- Camera Switcher -->
+      <div class="interactive" style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="cam-switcher">
+          <button class="btn-cam active" data-cam="cab">Cab POV</button>
+          <button class="btn-cam" data-cam="third">Chase</button>
+          <button class="btn-cam" data-cam="track">Trackside</button>
+          <button class="btn-cam" data-cam="passenger">Gerbong K1</button>
+        </div>
+      </div>
+
+      <!-- Locomotive Levers & Deadman Panel -->
+      <div class="levers-panel interactive">
+        <!-- Throttle Controls -->
+        <div class="lever-col">
+          <span class="gauge-label">Throttle (W/S)</span>
+          <div class="lever-btn-group">
+            <button class="btn-step" id="btn-throttle-up">▲</button>
+            <button class="btn-step" id="btn-throttle-down">▼</button>
+          </div>
+        </div>
+
+        <!-- Train Air Brake Controls -->
+        <div class="lever-col">
+          <span class="gauge-label">Rem Kereta (Q/A)</span>
+          <div class="lever-btn-group">
+            <button class="btn-step" id="btn-brake-up">▲</button>
+            <button class="btn-step" id="btn-brake-down">▼</button>
+          </div>
+        </div>
+
+        <!-- Reverser -->
+        <div class="lever-col">
+          <span class="gauge-label">Reverser (R)</span>
+          <button class="btn-step" id="btn-reverser" style="width:55px; font-size:11px;">FWD</button>
+        </div>
+      </div>
+
+      <!-- Action Buttons (Horn & Deadman) -->
+      <div class="control-cluster interactive">
+        <button class="btn-action btn-deadman" id="btn-deadman" title="Tekan Spasi / D untuk mereset Deadman">
+          ⚠️ SIAP MASINIS (SPASI)
+        </button>
+        <button class="btn-action btn-horn" id="btn-horn" title="Semboyan 35 Klakson (H)">
+          📢 SEMBOYAN 35 (H)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUSSID Style Route & Fleet Selector Modal -->
+  <div id="route-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 style="font-size: 22px; color: #38bdf8;">🚆 Pilih Jalur & Armada Kereta Api</h2>
+          <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">Pilih jalur lintasan KAI / KRL dan jenis lokomotif</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px; font-size: 14px; font-weight: 700; color: #f8fafc;">1. PILIH RUTE LINTAS:</div>
+      <div class="route-grid">
+        <div class="route-card selected" data-route="jakarta">
+          <div class="badge badge-krl" style="margin-bottom: 8px;">Jabodetabek Trunk</div>
+          <h3 style="font-size: 16px; margin-bottom: 6px;">Manggarai - Jatinegara</h3>
+          <p style="font-size: 12px; color: #94a3b8;">Jalur ganda terelektrifikasi, persinyalan otomatis, stasiun layang & JPL sibuk.</p>
+        </div>
+        <div class="route-card" data-route="priangan">
+          <div class="badge badge-kai" style="margin-bottom: 8px;">Lintas Selatan</div>
+          <h3 style="font-size: 16px; margin-bottom: 6px;">Sasaksaat & Jembatan Cikubang</h3>
+          <p style="font-size: 12px; color: #94a3b8;">Jalur pegunungan Priangan, terowongan legendaris 949m, dan jembatan tinggi.</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 12px; font-size: 14px; font-weight: 700; color: #f8fafc;">2. PILIH ARMADA (ROLLING STOCK):</div>
+      <div class="route-grid">
+        <div class="route-card selected" data-train="cc206">
+          <div class="badge badge-kai" style="margin-bottom: 8px;">Lokomotif KAJJ</div>
+          <h3 style="font-size: 16px; margin-bottom: 4px;">CC 206 (GE CM20EMP)</h3>
+          <p style="font-size: 12px; color: #94a3b8;">Dua kabin masinis, 2.250 HP, menarik 8 Kereta Eksekutif Stainless Steel.</p>
+        </div>
+        <div class="route-card" data-train="jr205">
+          <div class="badge badge-krl" style="margin-bottom: 8px;">KRL Commuter Line</div>
+          <h3 style="font-size: 16px; margin-bottom: 4px;">KRL Seri JR 205</h3>
+          <p style="font-size: 12px; color: #94a3b8;">Rangkaian 10 kereta Tokyo Metro/JR East khas Jabodetabek dengan pantograf.</p>
+        </div>
+      </div>
+
+      <button class="btn-start" id="btn-start-game">MULAI DINAS MASINIS ➡️</button>
+    </div>
+  </div>
+
+  <!-- Simulator Scripts -->
+  <script src="js/audio.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/signals.js"></script>
+  <script src="js/engine.js"></script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KAISimulatorRouteSpec",
+  "type": "object",
+  "required": ["route_id", "route_name", "gauge_mm", "nodes", "signals"],
+  "properties": {
+    "route_id": { "type": "string" },
+    "route_name": { "type": "string" },
+    "gauge_mm": { "type": "integer", "default": 1067 },
+    "electrified": { "type": "boolean", "default": true },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id", "position", "tangent", "speed_limit_kph"],
+        "properties": {
+          "node_id": { "type": "string" },
+          "position": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "tangent": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "speed_limit_kph": { "type": "number" },
+          "elevation_grade_permille": { "type": "number" },
+          "catenary_pole_type": { "type": "string" }
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["signal_id", "node_id", "aspects"],
+        "properties": {
+          "signal_id": { "type": "string" },
+          "node_id": { "type": "string" },
+          "track_index": { "type": "integer" },
+          "type": { "type": "string" },
+          "aspects": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "default_state": { "type": "string" }
+        }
+      }
+    }
+  }
+}

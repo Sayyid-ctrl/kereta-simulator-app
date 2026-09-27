@@ -1,0 +1,61 @@
+{
+  "locomotives": [
+    {
+      "id": "CC206_CM20EMP",
+      "name": "Lokomotif CC 206 (GE CM20EMP)",
+      "type": "DIESEL_ELECTRIC",
+      "power_hp": 2250,
+      "max_speed_kph": 120,
+      "weight_tons": 90,
+      "traction_effort_kn": 275,
+      "brakes": {
+        "type": "DUAL_PIPE_AIR_BRAKE",
+        "has_dynamic_brake": true,
+        "notch_count": 8
+      },
+      "cab": {
+        "has_deadman_pedal": true,
+        "deadman_timeout_sec": 45,
+        "horn_audio": "audio/horns/cc206_semboyan35.wav",
+        "engine_audio": "audio/engine/ge_cm20emp_idle.wav"
+      }
+    },
+    {
+      "id": "CC201_GE_U20C",
+      "name": "Lokomotif CC 201 (GE U20C)",
+      "type": "DIESEL_ELECTRIC",
+      "power_hp": 1950,
+      "max_speed_kph": 120,
+      "weight_tons": 84,
+      "traction_effort_kn": 220,
+      "brakes": {
+        "type": "AIR_BRAKE_WABCO",
+        "has_dynamic_brake": true,
+        "notch_count": 8
+      },
+      "cab": {
+        "has_deadman_pedal": true,
+        "deadman_timeout_sec": 30,
+        "horn_audio": "audio/horns/cc201_semboyan35.wav",
+        "engine_audio": "audio/engine/ge_u20c_idle.wav"
+      }
+    }
+  ],
+  "emus": [
+    {
+      "id": "JR205_SERIES",
+      "name": "KRL Seri JR 205 (Jabodetabek)",
+      "type": "ELECTRIC_MULTIPLE_UNIT",
+      "voltage": "1500V_DC",
+      "max_speed_kph": 100,
+      "consist_options": [8, 10, 12],
+      "acceleration_ms2": 0.85,
+      "deceleration_ms2": 1.1,
+      "cab": {
+        "has_deadman_pedal": true,
+        "horn_audio": "audio/horns/jr205_horn.wav",
+        "atc_bell_audio": "audio/cab/atc_ding.wav"
+      }
+    }
+  ]
+}
